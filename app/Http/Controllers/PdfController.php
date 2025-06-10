@@ -172,7 +172,7 @@ class PdfController extends Controller
                                         'x' => $panel['gridPos']['x'] ?? 0,
                                         'y' => ($panel['gridPos']['y'] ?? 0) + ($panel['gridPos']['h'] ?? 0) * $i,
                                         'w' => $panel['gridPos']['w'] ?? 0,
-                                        'h' => $panel['gridPos']['h'] ?? 0,
+                                        'h' => ($panel['gridPos']['h'] ?? 0)- $htoRemove,
                                         'from' => $from,
                                         'to' => $to,
                                         'var' => $varvalue
@@ -180,7 +180,7 @@ class PdfController extends Controller
                                 }else{
                                     $numberofCols=min($maxPerRow, count($newvars));
                                     $panelW = ($panel['gridPos']['w'] ?? 0) / $numberofCols;
-                                    $panelH = $panel['gridPos']['h'] ?? 0;
+                                    $panelH = ($panel['gridPos']['h'] ?? 0)- $htoRemove;
                                     $startX = $panel['gridPos']['x'] ?? 0;
                                     $startY = $panel['gridPos']['y'] ?? 0;
                                     $col=$i % $numberofCols;
@@ -237,7 +237,7 @@ class PdfController extends Controller
                             'x' => $panel['gridPos']['x'] ?? 0,
                             'y' => $panel['gridPos']['y'] ?? 0,
                             'w' => $panel['gridPos']['w'] ?? 0,
-                            'h' => $panel['gridPos']['h'] ?? 0,
+                            'h' => ($panel['gridPos']['h'] ?? 0)- $htoRemove,
                             'from' => $from,
                             'to' => $to,
                             'var' => $othervarsquery
