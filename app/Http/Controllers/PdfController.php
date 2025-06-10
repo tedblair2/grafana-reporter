@@ -13,7 +13,7 @@ use Log;
 
 class PdfController extends Controller
 {
-    public function generatePdf($panels,$title = 'Grafana Dashboard',$from = 'now-6h', $to = 'now'){
+    public function generatePdf($panels,$title = 'Grafana Dashboard',$from = 'now-6h', $to = 'now',$timezone = 'UTC'){
         $unitSize = 30;
         $page1Max = 800;
         $pageHeight = 990;
@@ -34,7 +34,7 @@ class PdfController extends Controller
         //     ['x' =>3, 'y'=>20, 'w'=>21, 'h'=> 10, 'url'=>'images/16(2).png'],
         // ]);
         $panelsGroupedByY = $panels->groupBy('y');
-        $grafanatime=new GrafanaTimeRange($from, $to);
+        $grafanatime=new GrafanaTimeRange($from, $to,$timezone);
         $panelsWithPage = [];
         foreach ($panelsGroupedByY as $y => $group) {
             // Find max h in this row
@@ -103,9 +103,13 @@ class PdfController extends Controller
         $to = $request->input('to') ?? 'now';
         $vars=[];
         $query  = explode('&', $url['query']);
-        $timezone = $request->input('timezone') ?? config('app.timezone');
+        $timezone='';
+        if(isset($request->timezone) && !empty($request->timezone) && $request->timezone !== 'browser'){
+            $timezone = $request->input('timezone');
+        }else{
+            $timezone = 'UTC';
+        }
         $title = '';
-        Log::info("Timezone: $timezone");
 
         foreach($query as $param){
             if(str_starts_with($param, 'var-')){
@@ -119,7 +123,8 @@ class PdfController extends Controller
             "Content-Type"=>"application/json",
             "Authorization"=>"Bearer $apiKey"
         ];
-        $url="https://monitoring.liquidtelecom.co.ke/api/dashboards/uid/$id?from=$from&to=$to";
+        $GRAFANA_URL = env('GRAFANA_URL', 'http:://localhost:3000');
+        $url="$GRAFANA_URL/api/dashboards/uid/$id?from=$from&to=$to";
         if(!empty($varQuery)){
             $url .= '&' . $varQuery;
         }
@@ -205,9 +210,10 @@ class PdfController extends Controller
                             // If repeatDirection is not set, we assume it is a row repeat
                             $repeat= $panel['repeat'] ?? '';
                             $title = $panel['title'] ?? '';
-                            $rowpanels = collect($panels)->filter(function ($p) use ($repeat) {
+                            $htoRemove += $panel['gridPos']['h'] ?? 0;
+                            $rowpanels = (!empty($panel['panels'])) ? collect($panel['panels']) : collect($panels)->filter(function ($p) use ($repeat) {
                                 return isset($p['title']) && $p['type'] !== 'row' && stripos($p['title'], $repeat) !== false;
-                            });
+                            })->values();
                             $newvars= [];
                             $othervars= [];
                             foreach($vars as $var){
@@ -219,9 +225,7 @@ class PdfController extends Controller
                                     $othervars[]=$var;
                                 }
                             }
-                            $panelss=collect($panels);
                             Log::info("Row repeat: $rowpanels");
-                            Log::info("Panels: $panelss");
                             return response()->json([
                                 'isSuccess' => false,
                                 'message' => $newvars,
@@ -243,7 +247,7 @@ class PdfController extends Controller
                 }
             }
 
-            return $this->getEachPanel($panelinfo,$headers,$id,$title, $from, $to);
+            return $this->getEachPanel($panelinfo,$headers,$id,$title, $from, $to,$timezone);
         }else{
             return response()->json([
                 'isSuccess' => false,
@@ -253,7 +257,7 @@ class PdfController extends Controller
         }
     }
 
-    public function getEachPanel($panelinfo,$headers,$id,$title = 'Grafana Dashboard',$from = 'now-6h', $to = 'now'){
+    public function getEachPanel($panelinfo,$headers,$id,$title = 'Grafana Dashboard',$from = 'now-6h', $to = 'now',$timezone = 'UTC'){
         $chunkSize = 2; // max number of concurrent requests
         $panelChunks = array_chunk($panelinfo, $chunkSize);
         $panels=[];
@@ -316,7 +320,7 @@ class PdfController extends Controller
             usleep(500000); // Sleep for 500 milliseconds to avoid overwhelming the server
         }
 
-        return $this->generatePdf(collect($panels),$title, $from, $to);
+        return $this->generatePdf(collect($panels),$title, $from, $to,$timezone);
     }
 }
 
@@ -326,13 +330,16 @@ class GrafanaTimeRange
     public $from;
     public $to;
 
+    public $timezone;
+
     const REL_TIME_REGEX = '/^now([+-]\d+)([mhdwMy])$/';
     const BOUNDARY_TIME_REGEX = '/^(.*)\/([dwMy])$/';
 
-    public function __construct($from = '', $to = '')
+    public function __construct($from = '', $to = '',$timezone = '')
     {
         $this->from = $from ?: 'now-1h';
         $this->to = $to ?: 'now';
+        $this->timezone = $timezone ?: config('app.timezone');
     }
 
     public function fromFormatted()
@@ -388,7 +395,7 @@ class GrafanaTimeRange
 
     protected function parseMoment($str)
     {
-        $localTz = config('app.timezone') ?? date_default_timezone_get();
+        $localTz = $this->timezone ?: config('app.timezone');
         if ($str === 'now' || $str === '') {
             return Carbon::now($localTz);
         }
@@ -398,7 +405,7 @@ class GrafanaTimeRange
         // Support ISO8601 (e.g., 2025-06-04T21:00:00.000Z)
         if ($this->isISO8601($str)) {
             try {
-                return Carbon::parse($str)->tz($localTz); // <--- Force UTC
+                return Carbon::parse($str)->tz($localTz);
             } catch (Exception $e) {
                 throw new Exception("$str is not a recognised ISO8601 time format");
             }
@@ -409,7 +416,7 @@ class GrafanaTimeRange
             if (strlen($str) > 10) {
                 $str = substr($str, 0, 10);
             }
-            return Carbon::createFromTimestamp($str,'UTC')->tz($localTz); // <--- Force UTC
+            return Carbon::createFromTimestamp($str,'UTC')->tz($localTz);
         }
         throw new Exception("$str is not a recognised time format");
     }
