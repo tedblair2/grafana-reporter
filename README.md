@@ -6,7 +6,7 @@ Goes without saying in order to use the application on your device, ensure php v
 
 To generate a pdf of a dashboard send a request as below
 
-http://your-laravel-app-url-here/api/pdf/grafana-dashboard-id?apitoken=service-account-token&other-variables-here-such-as-from-and-to-and-vars
+http://your-laravel-app-url-here/api/pdf/grafana-dashboard-id?apitoken=service-account-token&other-variables-here-such-as-from-and-to-and-vars-and-timezone
 
 To set up your grafana application URL, add it as an environement variable to your .env file:
 
