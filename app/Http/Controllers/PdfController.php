@@ -154,9 +154,6 @@ class PdfController extends Controller
                                     $othervars[]=$var;
                                 }
                             }
-                            // foreach($vars as $var){
-                                
-                            // }
                             $othervarsquery= implode('&', $othervars);
                             foreach($newvars as $i=>$panelvar){
                                 if($direction === 'v'){
