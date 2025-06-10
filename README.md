@@ -10,4 +10,4 @@ http://your-laravel-app-url-here/api/pdf/grafana-dashboard-id?apitoken=service-a
 
 To set up your grafana application URL, add it as an environement variable to your .env file:
 
-GRAFANA_URL=grafana_url_here
+### GRAFANA_URL=grafana_url_here
