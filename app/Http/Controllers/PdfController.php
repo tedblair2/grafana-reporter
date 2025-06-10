@@ -123,7 +123,7 @@ class PdfController extends Controller
             "Content-Type"=>"application/json",
             "Authorization"=>"Bearer $apiKey"
         ];
-        $GRAFANA_URL = env('GRAFANA_URL', 'http:://localhost:3000');
+        $GRAFANA_URL = env('GRAFANA_URL', 'http://localhost:3000');
         $url="$GRAFANA_URL/api/dashboards/uid/$id?from=$from&to=$to";
         if(!empty($varQuery)){
             $url .= '&' . $varQuery;
