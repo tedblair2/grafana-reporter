@@ -130,10 +130,12 @@ class PdfController extends Controller
             $panels = $dashboard['panels'] ?? [];
 
             $panelinfo = [];
+            $htoRemove=0;
             if(!empty($panels)){
                 foreach ($panels as $index=>$panel){
                     if(isset($panel['type']) && $panel['type'] === 'row' && !isset($panel['repeat'])){
                         // Skip row panels without repeat
+                        $htoRemove += $panel['gridPos']['h'] ?? 0;
                         continue;
                     }
                     if(isset($panel['repeat'])){
