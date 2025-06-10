@@ -261,15 +261,16 @@ class PdfController extends Controller
         $chunkSize = 2; // max number of concurrent requests
         $panelChunks = array_chunk($panelinfo, $chunkSize);
         $panels=[];
+        $GRAFANA_URL = env('GRAFANA_URL', 'http://localhost:3000');
         foreach ($panelChunks as $chunk) {
-            $responses=Http::pool(function (Pool $pool) use($chunk,$headers,$id){
+            $responses=Http::pool(function (Pool $pool) use($chunk,$headers,$id,$GRAFANA_URL) {
                 foreach($chunk as $panel){
                     $from=$panel['from'];
                     $to=$panel['to'];
                     $panelId=$panel['id'];
                     $height = ($panel['h'] ?? 0) * 40;
                     $width = ($panel['w'] ?? 0) * 40;
-                    $url="https://monitoring.liquidtelecom.co.ke/render/d-solo/$id/_?from=$from&to=$to&panelId=$panelId&theme=light&height=$height&width=$width";
+                    $url="$GRAFANA_URL/render/d-solo/$id/_?from=$from&to=$to&panelId=$panelId&theme=light&height=$height&width=$width";
                     if(isset($panel['var']) && !empty($panel['var'])){
                         $url .= '&' . $panel['var'];
                     }
